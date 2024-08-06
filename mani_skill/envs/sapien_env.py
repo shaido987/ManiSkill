@@ -956,8 +956,8 @@ class BaseEnv(gym.Env):
                 self.physx_system.set_scene_offset(
                     scene,
                     [
-                        scene_x * self.sim_cfg.spacing,
-                        scene_y * self.sim_cfg.spacing,
+                        scene_x * self.sim_cfg.spacing_x,
+                        scene_y * self.sim_cfg.spacing_y,
                         0,
                     ],
                 )
