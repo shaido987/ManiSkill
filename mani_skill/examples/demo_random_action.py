@@ -56,7 +56,7 @@ def main(args):
         args.env_id,
         obs_mode=args.obs_mode,
         reward_mode=args.reward_mode,
-        robot_uids="unitree_h1",
+        robot_uids="anymal_c",
         control_mode=args.control_mode,
         render_mode=args.render_mode,
         sensor_configs=dict(shader_pack=args.shader),
@@ -88,6 +88,8 @@ def main(args):
             env.viewer.set_camera_pose(env.agent.robot.pose.sp)
         env.render()
     while True:
+        env.render()
+        continue
         action = env.action_space.sample()
         obs, reward, terminated, truncated, info = env.step(action)
         if verbose:

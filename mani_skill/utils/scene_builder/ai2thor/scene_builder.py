@@ -203,10 +203,13 @@ class AI2THORBaseSceneBuilder(SceneBuilder):
                         object["translation"][1] + 0,
                     ]
                     pose = sapien.Pose(p=position, q=q)
-                    builder.add_visual_from_file(str(model_path), pose=pose)
+                    builder.add_visual_from_file(str(model_path))
                     builder.add_nonconvex_collision_from_file(
                         str(model_path), pose=pose
                     )
+                    builder.initial_pose = pose
+                    # if "InsetLight" in actor_name or "DomeLight" in actor_name:
+                    #     self.scene.add_point_light([pose.p[0], pose.p[1], pose.p[2] - 0.1], color=[1, 1, 1], shadow=True)
                     builder.set_scene_idxs(env_idx)
                     actor = builder.build_static(name=f"{unique_id}_{actor_name}")
                 else:
@@ -242,6 +245,42 @@ class AI2THORBaseSceneBuilder(SceneBuilder):
 
         self.scene.set_ambient_light([0.3, 0.3, 0.3])
 
+        light_poses = []
+        # seed 0
+        # pose = sapien.Pose([3.781, 0.964, 2.261], [0.707107, 0.707107, 0, 0])
+        # self.scene.add_point_light([pose.p[0], pose.p[1], pose.p[2] - 0.1], color=[1, 1, 1], shadow=True)
+        # seed 1
+        # light_poses = [
+        #     sapien.Pose([-1.81, -1.07, 2.567], [0.707107, 0.707107, 0, 0]),
+        #     sapien.Pose([-3.762, 2.896, 2.567], [0.707107, 0.707107, 0, 0]),
+        #     sapien.Pose([-1.215, 2.896, 2.567], [0.707107, 0.707107, 0, 0])
+        # ]
+
+        # seed 2
+        # light_poses = [
+        #     sapien.Pose([-3.12637, 0.47591, 2.42856], [0.707107, 0.707107, 0, 0])
+        # ]
+
+        # seed 3
+        # light_poses = [
+        #     sapien.Pose([1.303, 1.85678, 2.4156], [0.707107, 0.707107, 0, 0]),
+        #     sapien.Pose([2.29448, 1.85678, 2.4156], [0.707107, 0.707107, 0, 0]),
+        #     sapien.Pose([3.234, 1.85678, 2.4156], [0.707107, 0.707107, 0, 0])
+        # ]
+
+        # seed 4
+        # light_poses = [
+        #     sapien.Pose([-3.334, 0.074, 2.285], [0.707107, 0.707107, 0, 0])
+        # ]
+        # seed 5
+        light_poses = [
+            sapien.Pose([-4.212, -0.175, 2.486], [0.707107, 0.707107, 0, 0]),
+            sapien.Pose([-1.833, -0.175, 2.486], [0.707107, 0.707107, 0, 0]),
+        ]
+        for lp in light_poses:
+            self.scene.add_point_light(
+                [lp.p[0], lp.p[1], lp.p[2] - 0.2], color=[1, 1, 1], shadow=True
+            )
         # merge actors into one
         self.bg = Actor.create_from_entities(
             bgs,
@@ -269,7 +308,36 @@ class AI2THORBaseSceneBuilder(SceneBuilder):
             # For the purposes of physical simulation, we disable collisions between the Fetch robot and the scene background
             self.disable_fetch_move_collisions(self.bg)
         else:
-            raise NotImplementedError(self.env.robot_uids)
+
+            agent: Fetch = self.env.agent
+            # rest_keyframe = agent.keyframes["standing"]
+            # agent.reset(rest_keyframe.qpos)
+            # agent.robot.set_pose( sapien.Pose([4.62692, 1, 0.755], [1, -9.31323e-10, -1.45519e-11, 0])) # g1 s0
+            # agent.robot.set_pose(sapien.Pose([-1.79722, -0.890891, 0.994078], [0.395681, 0, 2.51457e-08, 0.918388])) # h2 s1
+            # agent.robot.set_pose(sapien.Pose([-2.95447, 0.551429, 0.0272821], [0.74377, 2.98023e-08, 2.23517e-08, 0.668436])) # googlerobot s2
+            # agent.reset(np.array([0.0, 0.0, -0.253, 0.0, 0.025, -0.228, 0.0, 0.0, 0.099, 0.685, 0.024, 1.579, 0.591, -0.0, 0.0]))
+
+            # agent.robot.set_pose(sapien.Pose([1.79153, 1.57466, 0.901988], [0.68663, 0, 2.8158e-09, 0.727008])) # franka s3
+            # agent.reset(agent.keyframes["rest"].qpos)
+            # agent.robot.set_pose(sapien.Pose([-0.855202, -0.141825, 0.539262], [0.499067, -3.25963e-09, 4.80213e-10, 0.866564])) # anymal_c s4
+            # agent.reset(agent.keyframes["standing"].qpos)
+
+            # koch-v1.1
+            agent.robot.set_pose(
+                sapien.Pose(
+                    [-4.16596, -0.349665, 1.08085],
+                )
+            )  # koch-v1.1 s5
+
+            # agent.robot.set_pose(
+            #     Pose.create_from_pq(
+            #         p=[
+            #             [*FETCH_BUILD_CONFIG_IDX_TO_START_POS[bci], 0.755]
+            #             for bci in self.build_config_idxs
+            #         ]
+            #     )
+            # )
+            # raise NotImplementedError(self.env.robot_uids)
 
         for obj, pose in self._default_object_poses:
             obj.set_pose(pose)
