@@ -274,8 +274,7 @@ class AI2THORBaseSceneBuilder(SceneBuilder):
         # ]
         # seed 5
         light_poses = [
-            sapien.Pose([-4.212, -0.175, 2.486], [0.707107, 0.707107, 0, 0]),
-            sapien.Pose([-1.833, -0.175, 2.486], [0.707107, 0.707107, 0, 0]),
+            sapien.Pose([2.403, 2.726, 2.4857], [0.707107, 0.707107, 0, 0]),
         ]
         for lp in light_poses:
             self.scene.add_point_light(
@@ -325,9 +324,11 @@ class AI2THORBaseSceneBuilder(SceneBuilder):
             # koch-v1.1
             agent.robot.set_pose(
                 sapien.Pose(
-                    [-4.16596, -0.349665, 1.08085],
+                    [4.19302, 1.99994, 0.877875],
+                    [0.706559, -6.51926e-09, 2.79397e-08, -0.707655],
                 )
             )  # koch-v1.1 s5
+            agent.reset(np.array([-1.447, -0.031, -0.263, -0.11, 0.0, 0.0]))
 
             # agent.robot.set_pose(
             #     Pose.create_from_pq(
