@@ -72,7 +72,7 @@ class OpenCabinetDrawerEnv(BaseEnv):
     def _default_sim_config(self):
         return SimConfig(
             spacing=10,
-            gpu_memory_cfg=GPUMemoryConfig(
+            gpu_memory_config=GPUMemoryConfig(
                 max_rigid_contact_count=2**21, max_rigid_patch_count=2**19
             ),
         )
@@ -146,7 +146,9 @@ class OpenCabinetDrawerEnv(BaseEnv):
                     # save the first mesh in the link object that correspond with a handle
                     handle_links_meshes[-1].append(
                         link.generate_mesh(
-                            filter=lambda _, x: "handle" in x.name, mesh_name="handle"
+                            filter=lambda _, render_shape: "handle"
+                            in render_shape.name,
+                            mesh_name="handle",
                         )[0]
                     )
 
