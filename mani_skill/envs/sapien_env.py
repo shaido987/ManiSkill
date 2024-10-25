@@ -928,7 +928,7 @@ class BaseEnv(gym.Env):
                 terminated = info["fail"].clone()
             else:
                 terminated = torch.zeros(self.num_envs, dtype=bool, device=self.device)
-
+        info["state_dict"] = self.get_state_dict()
         return (
             obs,
             reward,
