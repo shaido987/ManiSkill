@@ -135,7 +135,6 @@ class PickSingleYCBEnv(BaseEnv):
             xyz = torch.zeros((b, 3))
             xyz[:, :2] = torch.rand((b, 2)) * 0.2 - 0.1
             xyz[:, 2] = self.object_zs[env_idx]
-            print(xyz)
             qs = random_quaternions(b, lock_x=True, lock_y=True)
             self.obj.set_pose(Pose.create_from_pq(p=xyz, q=qs))
 

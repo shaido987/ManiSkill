@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import cached_property
-from typing import TYPE_CHECKING, Generic, List, TypeVar
+from typing import TYPE_CHECKING, Generic, List, TypeVar, Union
 
 import numpy as np
+import sapien
 import sapien.physx as physx
 import torch
 
@@ -160,7 +161,7 @@ class PhysxRigidBodyComponentStruct(PhysxRigidBaseComponentStruct[T], Generic[T]
         return self.auto_compute_mass
 
     def get_cmass_local_pose(self) -> Pose:
-        return
+        return self.cmass_local_pose
 
     def get_disable_gravity(self) -> bool:
         return self.disable_gravity
@@ -180,7 +181,9 @@ class PhysxRigidBodyComponentStruct(PhysxRigidBaseComponentStruct[T], Generic[T]
     def set_angular_damping(self, damping: float) -> None:
         self.angular_damping = damping
 
-    # def set_cmass_local_pose(self, arg0: sapien.pysapien.Pose) -> None: ...
+    def set_cmass_local_pose(self, arg0):
+        self.cmass_local_pose = arg0
+
     def set_disable_gravity(self, arg0: bool) -> None:
         self.disable_gravity = arg0
 
@@ -217,7 +220,7 @@ class PhysxRigidBodyComponentStruct(PhysxRigidBaseComponentStruct[T], Generic[T]
     def auto_compute_mass(self) -> torch.Tensor:
         return torch.tensor([body.auto_compute_mass for body in self._bodies])
 
-    @cached_property
+    @property
     def cmass_local_pose(self) -> Pose:
         raw_poses = np.stack(
             [
@@ -227,9 +230,21 @@ class PhysxRigidBodyComponentStruct(PhysxRigidBaseComponentStruct[T], Generic[T]
         )
         return Pose.create(common.to_tensor(raw_poses), device=self.device)
 
-    # @cmass_local_pose.setter
-    # def cmass_local_pose(self, arg1: sapien.pysapien.Pose) -> None:
-    #     pass
+    @cmass_local_pose.setter
+    def cmass_local_pose(self, arg1: Union[Pose, sapien.Pose, Array]) -> None:
+        body_nums = torch.where(self.scene._reset_mask[self._scene_idxs])[0]
+        if isinstance(arg1, Pose):
+            arg1 = arg1.raw_pose
+        if isinstance(arg1, torch.Tensor):
+            arg1 = common.to_numpy(arg1)
+            cmass_poses = [
+                sapien.Pose(p=vec_pose[:3], q=vec_pose[3:]) for vec_pose in arg1
+            ]
+        else:
+            cmass_poses = [arg1] * len(body_nums)
+        for bnum, new_cmass_pose in zip(body_nums, cmass_poses):
+            self._bodies[bnum].set_cmass_local_pose(new_cmass_pose)
+
     @property
     def disable_gravity(self) -> torch.Tensor:
         return torch.tensor([body.disable_gravity for body in self._bodies])
