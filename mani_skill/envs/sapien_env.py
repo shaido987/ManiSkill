@@ -1219,7 +1219,9 @@ class BaseEnv(gym.Env):
 
         Called by `self._reconfigure`
         """
-        self._viewer.set_scene(self.scene.sub_scenes[0])
+        self.viewer.set_scenes(self.scene.sub_scenes, offsets=self.scene.scene_offsets_np)
+
+        # self._viewer.set_scene(self.scene.sub_scenes[0])
         control_window: sapien.utils.viewer.control_window.ControlWindow = (
             sapien_utils.get_obj_by_type(
                 self._viewer.plugins, sapien.utils.viewer.control_window.ControlWindow
@@ -1231,6 +1233,12 @@ class BaseEnv(gym.Env):
             self._viewer.set_camera_pose(
                 self._human_render_cameras["render_camera"].camera.global_pose[0].sp
             )
+        vs = self.viewer.window._internal_scene  # type: ignore
+        cubemap = self.scene.sub_scenes[0].render_system.get_cubemap()
+        if cubemap is not None:  # type: ignore [sapien may return None]
+            vs.set_cubemap(cubemap._internal_cubemap)
+        else:
+            vs.set_ambient_light([0.5, 0.5, 0.5])
 
     def render_human(self):
         """render the environment by opening a GUI viewer. This also returns the viewer object. Any objects registered in the _hidden_objects list will be shown"""
