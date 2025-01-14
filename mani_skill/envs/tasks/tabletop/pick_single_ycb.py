@@ -26,6 +26,27 @@ WARNED_ONCE = False
 
 @register_env("PickSingleYCB-v1", max_episode_steps=50, asset_download_ids=["ycb"])
 class PickSingleYCBEnv(BaseEnv):
+    """
+    **Task Description:**
+    Pick up a random object sampled from the [YCB dataset](https://www.ycbbenchmarks.com/) and move it to a random goal position
+
+    **Randomizations:**
+    - the object's xy position is randomized on top of a table in the region [0.1, 0.1] x [-0.1, -0.1]. It is placed flat on the table
+    - the object's z-axis rotation is randomized
+    - the object geometry is randomized by randomly sampling any YCB object. (during reconfiguration)
+
+    **Success Conditions:**
+    - the object position is within goal_thresh (default 0.025) euclidean distance of the goal position
+    - the robot is static (q velocity < 0.2)
+
+    **Goal Specification:**
+    - 3D goal position (also visualized in human renders)
+
+    **Additional Notes**
+    - On GPU simulation, in order to collect data from every possible object in the YCB database we recommend using at least 128 parallel environments or more, otherwise you will need to reconfigure in order to sample new objects.
+    """
+
+    _sample_video_link = "https://github.com/haosulab/ManiSkill/raw/main/figures/environment_demos/PickSingleYCB-v1_rt.mp4"
 
     SUPPORTED_ROBOTS = ["panda", "panda_wristcam", "fetch"]
     agent: Union[Panda, PandaWristCam, Fetch]
@@ -93,7 +114,7 @@ class PickSingleYCBEnv(BaseEnv):
             print(
                 """There are less parallel environments than total available models to sample.
                 Not all models will be used during interaction even after resets unless you call env.reset(options=dict(reconfigure=True))
-                or set reconfiguration_freq to be > 1."""
+                or set reconfiguration_freq to be >= 1."""
             )
 
         self._objs: List[Actor] = []
@@ -107,7 +128,9 @@ class PickSingleYCBEnv(BaseEnv):
             builder.initial_pose = sapien.Pose(p=[0, 0, 0])
             builder.set_scene_idxs([i])
             self._objs.append(builder.build(name=f"{model_id}-{i}"))
+            self.remove_from_state_dict_registry(self._objs[-1])
         self.obj = Actor.merge(self._objs, name="ycb_object")
+        self.add_to_state_dict_registry(self.obj)
 
         self.goal_site = actors.build_sphere(
             self.scene,
