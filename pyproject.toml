@@ -9,3 +9,7 @@ markers = [
     "gpu_sim: marks tests as using the GPU simulation (deselect with '-m \"not gpu_sim\"')",
     "serial",
 ]
+
+[tool.black]
+line-length = 88
+safe = true
