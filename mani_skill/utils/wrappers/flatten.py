@@ -42,9 +42,12 @@ class FlattenRGBDObservationWrapper(gym.ObservationWrapper):
                 images.append(cam_data["rgb"])
             if self.include_depth:
                 images.append(cam_data["depth"])
+
         images = torch.concat(images, axis=-1)
         # flatten the rest of the data which should just be state data
-        observation = common.flatten_state_dict(observation, use_torch=True)
+        observation = common.flatten_state_dict(
+            observation, use_torch=True, device=self.base_env.device
+        )
         ret = dict()
         if self.include_state:
             ret["state"] = observation
@@ -52,8 +55,8 @@ class FlattenRGBDObservationWrapper(gym.ObservationWrapper):
             ret["rgb"] = images
         elif self.include_rgb and self.include_depth:
             if self.sep_depth:
-                ret["rgb"] = images[...,:-1]
-                ret["depth"] = images[...,-1:]
+                ret["rgb"] = images[..., :-1]
+                ret["depth"] = images[..., -1:]
             else:
                 ret["rgbd"] = images
         elif self.include_depth and not self.include_rgb:
