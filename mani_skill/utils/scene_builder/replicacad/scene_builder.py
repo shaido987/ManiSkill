@@ -6,10 +6,10 @@ This code is also heavily commented to serve as a tutorial for how to build cust
 
 import json
 import os.path as osp
-from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List, Tuple, Union
 from functools import cached_property
+from pathlib import Path
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import sapien
@@ -34,6 +34,11 @@ IGNORE_FETCH_COLLISION_STRS = ["mat", "rug", "carpet"]
 
 @register_scene_builder("ReplicaCAD")
 class ReplicaCADSceneBuilder(SceneBuilder):
+
+    # robot_initial_pose = sapien.Pose(
+    #     p=[-1, 0, 0.02]
+    # )  # generally a safe initial spawn pose for the Fetch robot
+
     builds_lighting = True  # we set this true because the ReplicaCAD dataset defines some lighting for us so we don't need the default option from ManiSkill
 
     # build configs for RCAD are string file names
@@ -170,6 +175,7 @@ class ReplicaCADSceneBuilder(SceneBuilder):
                         builder.add_convex_collision_from_file(visual_file)
                     else:
                         builder.add_multiple_convex_collisions_from_file(collision_file)
+                    # builder.initial_pose = pose
                     builder.set_scene_idxs(env_idx)
                     actor = builder.build(name=f"{unique_id}_{actor_name}")
                     self._default_object_poses.append((actor, pose))
@@ -222,6 +228,11 @@ class ReplicaCADSceneBuilder(SceneBuilder):
                     urdf_loader.scale = articulated_meta["uniform_scale"]
                 articulation = urdf_loader.load(urdf_path, scene_idxs=env_idx)
                 pose = sapien.Pose(q=q) * sapien.Pose(pos, rot)
+                # builder = urdf_loader.parse(urdf_path)["articulation_builders"][0]
+                # pose = sapien.Pose(q=q) * sapien.Pose(pos, rot)
+                # builder.initial_pose = pose
+                # builder.set_scene_idxs(env_idx)
+                # articulation = builder.build()
                 self._default_object_poses.append((articulation, pose))
 
                 # for now classify articulated objects as "movable" object
@@ -252,9 +263,19 @@ class ReplicaCADSceneBuilder(SceneBuilder):
                 if mesh_fp.exists():
                     self._navigable_positions[bci] = trimesh.load(mesh_fp)
 
-        # ReplicaCAD's lighting isn't great for raytracing, so we define our own
-        self.scene.set_ambient_light([3 if self.ray_traced_lighting else 0.3] * 3)
-        color = np.array([1.0, 0.8, 0.5]) * (10 if self.ray_traced_lighting else 2)
+        # # ReplicaCAD's lighting isn't great for raytracing, so we define our own
+        if self.ray_traced_lighting:
+            for sub_scene in self.scene.sub_scenes:
+                sub_scene.set_environment_map(
+                    str(
+                        (
+                            Path(__file__).parent / "autumn_field_puresky_4k.hdr"
+                        ).absolute()
+                    )
+                )
+        else:
+            self.scene.set_ambient_light([0.3] * 3)
+        color = np.array([1.0, 0.8, 0.5]) * 2
         # entrance
         self.scene.add_point_light([-1.1, 2.775, 2.3], color=color)
         # dining area
@@ -289,7 +310,8 @@ class ReplicaCADSceneBuilder(SceneBuilder):
                 obj.set_qpos(obj.qpos[0] * 0)
                 obj.set_qvel(obj.qvel[0] * 0)
 
-        if physx.is_gpu_enabled():
+        # if self.scene.gpu_sim_enabled and len(env_idx) == self.env.num_envs:
+        if physx.is_gpu_enabled() and len(env_idx) == self.env.num_envs:
             self.scene._gpu_apply_all()
             self.scene.px.gpu_update_articulation_kinematics()
             self.scene.px.step()

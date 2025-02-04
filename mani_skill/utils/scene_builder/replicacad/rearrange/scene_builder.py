@@ -1,12 +1,12 @@
+import copy
+import itertools
 import json
 import os
 import os.path as osp
-from typing import Dict, List, Tuple, Optional
-from pathlib import Path
 from collections import defaultdict
-import copy
-import itertools
 from functools import cached_property
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import sapien
@@ -15,10 +15,10 @@ import torch
 import transforms3d
 
 from mani_skill import ASSET_DIR
-from mani_skill.utils.structs import Actor, Articulation
-from mani_skill.utils.building import actors
 from mani_skill.utils import common
+from mani_skill.utils.building import actors
 from mani_skill.utils.scene_builder.replicacad import ReplicaCADSceneBuilder
+from mani_skill.utils.structs import Actor, Articulation
 
 DEFAULT_HIDDEN_POS = [-10_000] * 3
 
@@ -206,6 +206,9 @@ class ReplicaCADRearrangeSceneBuilder(ReplicaCADSceneBuilder):
                     obj_instance_name = f"env-{env_num}_{actor_id}-{no}"
                     builder = actors.get_actor_builder(self.scene, id=f"ycb:{actor_id}")
                     builder.set_scene_idxs([env_num])
+                    builder.initial_pose = sapien.Pose(
+                        p=_running_default_hidden_pos_by_env[env_num]
+                    )
                     actor = builder.build(name=obj_instance_name)
 
                     ycb_objs[actor_id].append(actor)
@@ -285,6 +288,7 @@ class ReplicaCADRearrangeSceneBuilder(ReplicaCADSceneBuilder):
                         temp_p[..., 2] += 1000
                         self.show_actor(obj, sapien.Pose(q=pose.q, p=temp_p))
 
+        # if self.scene.gpu_sim_enabled:
         if physx.is_gpu_enabled():
             self.scene._gpu_apply_all()
             self.scene._gpu_fetch_all()
@@ -330,7 +334,8 @@ class ReplicaCADRearrangeSceneBuilder(ReplicaCADSceneBuilder):
                 articulation.set_qpos(base_qpos[reset_idxs])
                 articulation.set_qvel(articulation.qvel[reset_idxs] * 0)
 
-        if physx.is_gpu_enabled():
+        # if self.scene.gpu_sim_enabled and len(env_idx) == self.env.num_envs:
+        if physx.is_gpu_enabled() and len(env_idx) == self.env.num_envs:
             self.scene._gpu_apply_all()
             self.scene.px.gpu_update_articulation_kinematics()
             self.scene.px.step()
